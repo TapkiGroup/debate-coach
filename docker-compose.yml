@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./app/backend
+      dockerfile: Dockerfile
+    container_name: debate-coach-backend
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+      PORT: ${PORT:-8000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    ports:
+      - "${PORT:-8000}:8000"
+    command: uvicorn src.main:create_app --host 0.0.0.0 --port 8000
+    restart: unless-stopped
+
+  # Optional: if frontend is present and you want to run both with compose
+  # frontend:
+  #   build:
+  #     context: ./app/frontend
+  #     dockerfile: Dockerfile
+  #   container_name: debate-coach-frontend
+  #   environment:
+  #     NEXT_PUBLIC_API_BASE: "http://backend:8000"
+  #   ports:
+  #     - "3000:3000"
+  #   command: npm run dev
+  #   depends_on:
+  #     - backend
