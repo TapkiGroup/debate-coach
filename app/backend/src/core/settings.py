@@ -7,5 +7,4 @@ class Settings(BaseModel):
     tavily_api_key: str | None = os.getenv("TAVILY_API_KEY")
     port: int = int(os.getenv("PORT", "8000"))
 
-
 settings = Settings()

@@ -1,39 +1,25 @@
 from fastapi import APIRouter, HTTPException
-from ..models.schemas import ChatRequest, ChatResponse, ColumnUpdate, ProConItem
-from ..services.procon_mapper import strengthen_and_map
-from ..services.research.research_pipeline import run_research
-from datetime import datetime
+from ..models.schemas import ChatRequest, ChatResponse
+
+from app.agents.supervisor_agent import SupervisorAgent, SupervisorConfig
+from ..services.llm_provider import LLMProvider
+from ..services.research_provider import ResearchProvider
 
 router = APIRouter()
+
+_llm = LLMProvider()
+_research = ResearchProvider()
+_sup = SupervisorAgent(_llm, _research, SupervisorConfig())
 
 @router.post("/actions", response_model=ChatResponse)
 async def debate_actions(payload: ChatRequest):
     if payload.mode.name != "debate_coach":
         raise HTTPException(status_code=400, detail="Wrong mode for this endpoint")
+    out = _sup.process_turn(
+        session_id=payload.session_id,
+        mode=payload.mode.value,
+        message=payload.message,
+        explicit_actions=[a.value for a in payload.actions],
+    )
+    return ChatResponse(chat_text=out.chat_text, updates=out.updates)
 
-    chat_parts: list[str] = []
-    updates: list[ColumnUpdate] = []
-
-    title, pro_items, con_items = strengthen_and_map(payload.message)
-
-    if "evaluate_argument" in [a.value for a in payload.actions]:
-        chat_parts.append(
-            f"Strengthened your claim: '{title}'. Highlighted weaknesses and potential fallacies."
-        )
-        updates.append(ColumnUpdate(column="PRO", items=pro_items, timestamp=datetime.utcnow()))
-        updates.append(ColumnUpdate(column="CON", items=con_items, timestamp=datetime.utcnow()))
-
-    if "generate_counters" in [a.value for a in payload.actions]:
-        # Naive: reuse con_items as counters; real app would expand via GPT-5
-        chat_parts.append("Generated top counter-arguments to pressure-test your position.")
-        updates.append(ColumnUpdate(column="CON", items=con_items, timestamp=datetime.utcnow()))
-
-    if "research" in [a.value for a in payload.actions]:
-        sources = await run_research(payload.message)
-        chat_parts.append("Added concise sources related to your claim (supports/challenges/neutral).")
-        updates.append(ColumnUpdate(column="SOURCES", items=sources, timestamp=datetime.utcnow()))
-
-    if not updates:
-        chat_parts.append("No actions selected; nothing to update.")
-
-    return ChatResponse(chat_text="\n".join(chat_parts), updates=updates)

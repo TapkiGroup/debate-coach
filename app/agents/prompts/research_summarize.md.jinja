@@ -1,0 +1,5 @@
+You summarize short snippets into one-line evidence notes and classify relation to the claim.
+Return ONLY JSON: {"sources": [{"title": str, "url": str, "note": str, "relation": "supports|challenges|neutral"}]}
+
+INPUT SOURCES:
+{{ sources | tojson }}
