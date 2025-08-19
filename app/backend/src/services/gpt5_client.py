@@ -1,46 +1,42 @@
 from __future__ import annotations
-from openai import AsyncOpenAI
-from .prompt_templates import SYSTEM_CORE
-from ..core.settings import settings
+import os
+from openai import OpenAI
 from ..core.logger import logger
 
+AIML_BASE_URL = os.getenv("AIML_BASE_URL", "https://api.aimlapi.com/v1")
+AIML_API_KEY = os.getenv("AIML_API_KEY")  
+DEFAULT_MODEL = os.getenv("AIML_MODEL", "openai/gpt-5-nano-2025-08-07")
+
 class GPT5Client:
+    """
+    GPT-5 proxy client via AI/ML API (aimlapi.com).
+    """
+
     def __init__(self):
-        self.api_key = settings.openai_api_key
-        self.client = AsyncOpenAI(api_key=self.api_key) if self.api_key else None
+        if not AIML_API_KEY:
+            logger.warning("AIML_API_KEY is missing; GPT client will return a stub.")
+            self.client = None
+        else:
+            self.client = OpenAI(base_url=AIML_BASE_URL, api_key=AIML_API_KEY)
 
-    async def chat(self, system: str, user: str) -> str:
-        """
-        Sends a chat completion request to OpenAI.
-        Returns assistant text. Falls back to a deterministic stub if no API key.
-        """
+    async def chat(self, system: str, user: str, model: str | None = None) -> str:
+
         if not self.client:
-            logger.warning("OPENAI_API_KEY missing. Using dummy GPT-5 response.")
             return (
-                "[Coach] OPENAI_API_KEY missing"
+                "[Coach] (stub) No AIML_API_KEY set. Parsed your message and "
+                "would normally call GPT-5 here."
             )
-
-        try:
-            # Build standard chat messages
-            messages = [
-                {"role": "system", "content": system or SYSTEM_CORE},
-                {"role": "user", "content": user},
-            ]
-
-            # Call Chat Completions API (async)
-            resp = await self.client.responses.create(
-                model=DEFAULT_MODEL,
-                input=[
-                    {"role": "system", "content": system or SYSTEM_CORE},
-                    {"role": "user", "content": user},
-                ],
-            )
-            return getattr(resp, "output_text", "") or ""
-            
-        except Exception as e:
-            logger.exception("OpenAI chat call failed: %s", e)
-            # graceful fallback so the app keeps working in demo
-            return (
-                "[Coach] The live model call failed."
-            )
+        
+        response = self.client.chat.completions.create(
+            model=DEFAULT_MODEL,
+            messages=[
+                {"role": "system", "content": system or ""},
+                {"role": "user", "content": user or ""},
+            ],
+            temperature=0.7,
+            top_p=0.7,
+            frequency_penalty=1.0,
+            max_tokens=500,
+        )
+        return response.choices[0].message.content or ""
 
