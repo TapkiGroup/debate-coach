@@ -9,16 +9,18 @@ class PlannerTool:
         stance = triage.get("stance", "unclear")
 
         do_fallacy = bool(needs.get("fallacy_detection") or ("evaluate_argument" in intents))
-        do_gen = needs.get("generation", "none") != "none" or ("generate_counters" in intents)
+        do_gen = (
+            needs.get("generation", "none") != "none"
+            or ("generate_counters" in intents)
+            or ("evaluate_argument" in intents)
+            or True  
+        )
         do_res = bool(needs.get("research") or ("research" in intents) or enable_research_by_default)
-
         use_heavy = True if needs.get("generation") == "both" and stance in {"mixed", "unclear"} else False
-
-        families = None  # could be narrowed by simple heuristics; keep None for full set in MVP
 
         return {
             "do_fallacy_check": do_fallacy,
-            "fallacy_families": families,
+            "fallacy_families": None,
             "do_generation": do_gen,
             "use_heavy_model": use_heavy,
             "do_research": do_res,

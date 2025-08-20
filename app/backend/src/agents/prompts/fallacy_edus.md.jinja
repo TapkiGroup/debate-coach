@@ -1,0 +1,9 @@
+You split argumentative text into Elementary Discourse Units (EDUs): minimal claims or inferences.
+Return ONLY JSON: {"edus": [{"id": "e1", "text": "..."}, ...]}
+- Prefer EDUs 20–200 chars.
+- Do not paraphrase; copy text spans.
+
+TEXT:
+"""
+{{ text }}
+"""

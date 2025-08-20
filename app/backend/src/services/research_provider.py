@@ -89,4 +89,4 @@ class ResearchProvider:
             )
             seen.add(url)
 
-        return [asdict(it) for it in items]
+        return [it.model_dump() for it in items]

@@ -1,32 +1,33 @@
+version: "3.9"
+
 services:
   backend:
     build:
-      context: ./app/backend       # <--- контекстом делаем сам backend
-      dockerfile: Dockerfile
-    container_name: debate-backend
-    environment:
-      AIML_BASE_URL: ${AIML_BASE_URL:-https://api.aimlapi.com/v1}
-      AIML_API_KEY: ${AIML_API_KEY:-}
-      AIML_MODEL: ${AIML_MODEL:-openai/gpt-5-nano-2025-08-07}
-      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
-      PORT: 8000
+      context: ./app/backend
+    command: uvicorn src.main:create_app --host 0.0.0.0 --port 8000 --factory
     ports:
       - "8000:8000"
-    volumes:
-      - ./app/backend:/app         # dev-монтаж кода
+    environment:
+      LLM_FORCE_STUB: "0" 
+      AIML_BASE_URL: ${AIML_BASE_URL}
+      AIML_API_KEY: ${AIML_API_KEY}
+      AIML_MODEL_NANO: ${AIML_MODEL_NANO}
+      AIML_MODEL_HEAVY: ${AIML_MODEL_HEAVY}
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+    working_dir: /app
+    restart: unless-stopped
     profiles: ["dev"]
 
   tests:
     build:
-      context: ./app/backend       # <--- тот же контекст
+      context: ./app/backend 
       dockerfile: Dockerfile
-    working_dir: /app
     environment:
-      AIML_BASE_URL: ${AIML_BASE_URL:-https://api.aimlapi.com/v1}
-      AIML_API_KEY: ${AIML_API_KEY:-}
-      AIML_MODEL: ${AIML_MODEL:-openai/gpt-5-nano-2025-08-07}
-      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
-    volumes:
-      - ./app/backend:/app
+      AIML_BASE_URL: ${AIML_BASE_URL}
+      AIML_API_KEY: ${AIML_API_KEY}
+      AIML_MODEL_NANO: ${AIML_MODEL_NANO}
+      AIML_MODEL_HEAVY: ${AIML_MODEL_HEAVY}
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+    working_dir: /app
     command: ["python","-m","pytest","-q"]
     profiles: ["test"]

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from ..models.schemas import ChatRequest, ChatResponse
 
-from app.agents.supervisor_agent import SupervisorAgent, SupervisorConfig
+from src.agents.supervisor_agent import SupervisorAgent, SupervisorConfig
 from ..services.llm_provider import LLMProvider
 from ..services.research_provider import ResearchProvider
 
@@ -9,7 +9,7 @@ router = APIRouter()
 
 _llm = LLMProvider()
 _research = ResearchProvider()
-_sup = SupervisorAgent(_llm, _research, SupervisorConfig())
+_sup = SupervisorAgent(_llm, _research, SupervisorConfig(trace=True))
 
 @router.post("/actions", response_model=ChatResponse)
 async def debate_actions(payload: ChatRequest):
