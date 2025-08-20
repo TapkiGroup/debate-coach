@@ -8,7 +8,14 @@ class PlannerTool:
         needs = triage.get("needs", {})
         stance = triage.get("stance", "unclear")
 
-        do_fallacy = bool(needs.get("fallacy_detection") or ("evaluate_argument" in intents))
+        do_fallacy = bool(
+            needs.get("fallacy_detection")
+            or ("evaluate_argument" in intents)
+            or ("objections" in intents)
+            or ("critique" in intents)
+            or (triage.get("mode") == "debate_coach")
+        )
+
         do_gen = (
             needs.get("generation", "none") != "none"
             or ("generate_counters" in intents)
@@ -17,6 +24,7 @@ class PlannerTool:
         )
         do_res = bool(needs.get("research") or ("research" in intents) or enable_research_by_default)
         use_heavy = True if needs.get("generation") == "both" and stance in {"mixed", "unclear"} else False
+        #use_heavy = False
 
         return {
             "do_fallacy_check": do_fallacy,

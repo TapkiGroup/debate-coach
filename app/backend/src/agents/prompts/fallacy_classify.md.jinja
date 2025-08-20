@@ -21,6 +21,11 @@ Constraints:
 - "span" must be an exact substring of the EDU that triggers the rule (no paraphrasing).
 - Return JSON ONLY. No explanations, no markdown, no prose.
 
+- You MUST return an entry for EVERY input EDU in the same order.
+- If no rule applies, return "fallacies": [] for that EDU.
+- "span" must be the SHORTEST exact substring inside the EDU that triggers the rule and must lie within [start,end).
+- If any input EDU is missing in OUTPUT, your answer is invalid; fix and return JSON again.
+
 RULES:
 {{ rules | tojson }}
 

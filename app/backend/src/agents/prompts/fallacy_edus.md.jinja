@@ -3,6 +3,12 @@ Return ONLY JSON: {"edus": [{"id": "e1", "text": "..."}, ...]}
 - Prefer EDUs 20–200 chars.
 - Do not paraphrase; copy text spans.
 
+Return ONLY JSON: {"edus":[{"id":"e1","text":"...", "start": int, "end": int}, ...]}
+- "start"/"end" are 0-based character offsets in TEXT.
+- Cover ≥90% of argumentative content with 2–12 EDUs.
+- If segmentation is unclear, return a single EDU spanning the whole TEXT.
+- Do not normalize spelling; copy exact spans.
+
 TEXT:
 """
 {{ text }}

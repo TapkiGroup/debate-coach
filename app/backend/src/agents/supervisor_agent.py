@@ -26,7 +26,6 @@ class TurnOutput:
     chat_text: str
     updates: List[Dict[str, Any]] = field(default_factory=list)
 
-
 class SupervisorAgent:
     def __init__(self, llm_provider, research_provider, cfg: Optional[SupervisorConfig] = None):
         self.cfg = cfg or SupervisorConfig()
@@ -63,9 +62,9 @@ class SupervisorAgent:
         if plan.get("do_fallacy_check"):
             if self.cfg.trace: print("[SUP] step=fallacy:start")
             fallacies = self.fallacy.analyze(message, families=plan.get("fallacy_families"))
-            fi = self.updater._fallacy_hint(fallacies)
-            con_items.extend(fi)
-            if self.cfg.trace: print(f"[SUP] fallacy -> con_items+={len(fi)}")
+            #fi = self.updater._fallacy_hint(fallacies)
+            #con_items.extend(fi)
+            #if self.cfg.trace: print(f"[SUP] fallacy -> con_items+={len(fi)}")
         else:
             fallacies = None
 

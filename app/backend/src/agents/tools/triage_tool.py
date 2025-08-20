@@ -16,7 +16,7 @@ class TriageTool:
             data = json.loads(raw)
         except Exception:
             data = {}
-        # --- hard fallback when model returns {} ---
+
         if not isinstance(data, dict) or not data:
             data = {
                 "mode": mode,
@@ -26,4 +26,20 @@ class TriageTool:
                 "claims": [{"text": message, "normalized": message.lower(), "confidence": 0.5}],
                 "needs": {"fallacy_detection": (mode=="debate_coach"), "generation": "both", "research": False},
             }
+
+        # ---- Agentic audit (no hardcoded patterns) ----
+        auditor_tpl = Template((Path(__file__).resolve().parents[1] / "prompts" / "triage_auditor.md.jinja").read_text(encoding="utf-8"))
+        audit_raw = self.llm.chat_json(auditor_tpl.render(mode=mode, text=message, triage=data), temperature=0.0, max_tokens=200)
+        try:
+            audit = json.loads(audit_raw)
+        except Exception:
+            audit = {}
+
+        if isinstance(audit, dict) and audit:
+            # merge agentic corrections
+            if audit.get("force_intents"):
+                data["intents"] = sorted(list({*data.get("intents", []), *audit["force_intents"]}))
+            if audit.get("force_needs"):
+                data.setdefault("needs", {}).update(audit["force_needs"])
+
         return data

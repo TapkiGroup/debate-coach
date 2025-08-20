@@ -77,4 +77,3 @@ class LLMProvider:
         except Exception as e:
             print(f"[LLM] chat_sections_with_json EXCEPTION -> stub: {e}")
             return STUB_SECTIONS
-

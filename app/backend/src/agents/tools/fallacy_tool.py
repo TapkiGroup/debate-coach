@@ -23,8 +23,8 @@ class FallacyTool:
             edus = []
         rules = self.catalog if not families else [r for r in self.catalog if r.get("family") in families]
         short_rules = [
-            {"code": r["code"], "name": r["name"], "rule": r["rule"][:140], "example": r["example"][:120]}
-            for r in rules[:28]
+            {"code": r["code"], "name": r["name"], "rule": r["rule"][:140], "example": r["example"]}
+            for r in rules
         ]
         cls_prompt = self.tpl_class.render(edus=edus, rules=short_rules)
         cls_raw = self.llm.chat_json(cls_prompt, temperature=0.2, max_tokens=800)
