@@ -4,30 +4,42 @@ services:
   backend:
     build:
       context: ./app/backend
-    command: uvicorn src.main:create_app --host 0.0.0.0 --port 8000 --factory
-    ports:
-      - "8000:8000"
-    environment:
-      LLM_FORCE_STUB: "0" 
-      AIML_BASE_URL: ${AIML_BASE_URL}
-      AIML_API_KEY: ${AIML_API_KEY}
-      AIML_MODEL_NANO: ${AIML_MODEL_NANO}
-      AIML_MODEL_HEAVY: ${AIML_MODEL_HEAVY}
-      TAVILY_API_KEY: ${TAVILY_API_KEY}
+      dockerfile: Dockerfile
+    env_file: ./.env
     working_dir: /app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "${HOST_PORT:-8001}:8000"
+    environment:
+      AIMLAPI_BASE_URL: ${AIML_BASE_URL}
+      AIMLAPI_API_KEY: ${AIML_API_KEY}
+      SMOL_MODEL: ${AIML_MODEL_NANO}
+      CHEAP_MODEL: ${AIML_MODEL_NANO}
+      MAIN_MODEL: ${AIML_MODEL_HEAVY}
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+      APP_PORT: "8000"
     restart: unless-stopped
     profiles: ["dev"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   tests:
     build:
-      context: ./app/backend 
+      context: ./app/backend
       dockerfile: Dockerfile
-    environment:
-      AIML_BASE_URL: ${AIML_BASE_URL}
-      AIML_API_KEY: ${AIML_API_KEY}
-      AIML_MODEL_NANO: ${AIML_MODEL_NANO}
-      AIML_MODEL_HEAVY: ${AIML_MODEL_HEAVY}
-      TAVILY_API_KEY: ${TAVILY_API_KEY}
+    env_file: ./.env
     working_dir: /app
-    command: ["python","-m","pytest","-q"]
+    environment:
+      AIMLAPI_BASE_URL: ${AIML_BASE_URL}
+      AIMLAPI_API_KEY: ${AIML_API_KEY}
+      SMOL_MODEL: ${AIML_MODEL_NANO}
+      CHEAP_MODEL: ${AIML_MODEL_NANO}
+      MAIN_MODEL: ${AIML_MODEL_HEAVY}
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+    # run the real test suite:
+    command: ["pytest","-q"]
     profiles: ["test"]
