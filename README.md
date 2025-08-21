@@ -1,127 +1,98 @@
-# Debate-Coach — Product Brief (Hackathon MVP)
+# DebateMate 🗣️🤖
 
-Type a claim or pitch → GPT-5 runs a live mini-debate, flags fallacies, harvests sources, and continuously updates three evidence columns: Sources, Pro, Con — while you chat in the bottom pane.
+DebateMate is an AI-powered platform for **structured argumentation**, **pitch testing**, **critical feedback**, **expected objections**.
 
-## Why it matters
+Our vision is to create a tool where students, founders, and professionals can stress-test their reasoning against a powerful AI partner.
 
-- Doubles as a Pitch & Objection simulator for founders, sales, and comms.
-  
-- Teaches debate structure: detect fallacies, anticipate objections, and separate verified from unverifiable claims.
+In the future, DebateMate could grow into a pitch simulator for **startups**, **sales reps**, and a critical-thinking assistant for **anyone** who wants to refine their arguments before stepping into the real world.
 
-- Trains critical thinking 
+At its core, DebateMate uses GPT-5, which can write complex, nuanced texts, analyze reasoning, and surface weaknesses that humans might overlook. This makes debates not just automatic, but genuinely intelligent.
 
+## 🌟 What It Does
 
-## UI Layout (desktop, single screen)
+The app has two main modes:
 
-### Top 2/3: three live columns (scrollable histories)
+### Debate Counterattacks
 
-- Sources – citations & notes (with tags).
+User posts an argument.
 
-- Pro – refined user position & supporting arguments.
+The model summarizes it under the FOR column.
 
-- Con – critiques, counter-arguments, weak spots.
+User can choose to:
 
-### Bottom 1/3: Chat window (user ↔ coach dialogue).
+- Evaluate Argument → critique the logic, detect fallacies.
 
-### Right side narrow rail: Mode switcher (two buttons) + brief mode descriptions.
+- Give Objections → generate counterarguments.
 
-## Modes (for the hackathon MVP)
-### 🛡 Debate Coach
+- Find Sources → fetch neutral references (Wiki for now)
 
-1) Chat prompts user to paste a position/argument or snippet from a discussion.
+### Pitch Objections
 
-2) User chooses actions (any or all):
+User posts a startup pitch idea.
 
-- Evaluate my argument → critique + fallacy detection + 0–100 strength score.
+The model can:
 
-- Generate counter-arguments → ranked list with brief rationale.
+- Object → raise possible concerns.
 
-- Find sources about my position → gather+summarize for/against evidence; tag reliability.
+- Give Ruthless Impression → critique the pitch as an investor.
 
-3) Live updates
+- Research → fetch neutral references to test the idea.
 
-- PRO: coach refines the user’s claim (clearer, steel-manned) and lists strongest supporting points.
+The pitch is re-evaluated with a score, showing how convincing it remains after objections.
 
-- CON: coach posts weaknesses, fallacies (with icons) and strongest counter-points.
+## 🧠 Why GPT-5?
 
-- SOURCES: adds references with short notes and validation labels.
+We believe debates and arguments should be intelligent, nuanced, and constructive.
+GPT-5 is not just a chatbot — it can write complex, structured texts, analyze reasoning, and surface hidden weaknesses in arguments.
 
-4) Learning loop
+By leveraging its advanced reasoning, we can:
 
-After each turn, coach suggests expected opponent moves and how to respond.
+Turn casual opinions into professional debates.
 
-Fallacies labeled (examples): Strawman, Whataboutism, Ad hominem, False cause, Appeal to authority, Slippery slope.
+Stress-test startup ideas with ruthless investor-style objections.
 
-### 🎤 Pitch & Objection Mode
+Help users improve critical thinking and sharpen persuasion skills.
 
-1) Chat prompts user to paste a pitch (product/slide outline/value prop).
+## ⚙️ How to Run
 
-2) User picks one of three:
+Clone the repository:
 
-- Brutal first-impression (concise, critique from “ruthless listener”).
+```
+git clone https://github.com/TapkiGroup/debate-coach.git
+cd debate-coach
+```
 
-- Obvious objections (top 5 objections + suggested rebuttals).
+Copy .env.example to .env and fill in API keys:
 
-- Reality check (quick research scan; summary PRO/CON of the pitch’s assumptions).
+```
+cp .env.example .env
+```
 
-3) Live updates
+Build and run with Docker Compose:
 
-- PRO: value props, traction signals, credible assumptions.
+```
+docker compose up -d --build
+```
 
-- CON: risks, weak claims, market/feasibility gaps.
+Access the app at:
 
-- SOURCES: market stats, analogs, prior art, competitor notes.
+👉 http://localhost:8080
 
-4) Learning loop
+## 🛠️ Tech Stack
 
-## Data flow & pipeline
+Backend: FastAPI (Python)
 
-User input (claim/pitch) → Mode selector.
+Frontend: Next.js (React)
 
-Pre-analysis (GPT-5):
+Gateway: Nginx
 
-Extract claims, detect stance, split into propositions.
+Containerization: Docker Compose
 
-Decide which actions are requested (evaluate / counters / research).
+## 💡 Vision
 
-Research (if requested):
+Debate Coach is just a beginning.
+We want to explore AI-assisted debates, objection handling, and critical feedback systems.
+Imagine classrooms, hackathons, or boardrooms where AI challenges ideas — sharpening them instead of replacing them.
 
-- Tavily: web search → top results with snippets.
-
-- Wikipedia API: entity facts & overviews.
-
-Light heuristics: dedupe, classify supports/undermines/neutral.
-
-## Argument mapping (GPT-5):
-
-Update PRO/CON with ranked bullets (strength 1–5), link to source IDs when applicable.
-
-Detect fallacies with short explanations + emojis/icons.
-
-## UI events:
-
-Chat posts Updated PRO/CON/SOURCES.
-
-Columns append entries with timestamps (no destructive edits; we keep evolution).
-
-## Scoring & labels
-
-Argument Strength (0–100): composite of clarity, evidence, relevance, logical soundness.
-
-Fallacy Flags: list with counts; clicking opens a one-sentence “why.”
-
-Source Reliability: High (peer-review/official), Medium (reputable media/industry), Low (blogs/forums/unknown).
-
-Evidence Tag: ✅ corroborated, ❌ refuted, ⚠️ disputed, 🕳 unverifiable.
-
-## Tech choices (MVP, free-friendly)
-
-Frontend: Next.js (or Streamlit for speed).
-
-Backend: FastAPI (single endpoint per action), Python.
-
-LLM: GPT-5 API (coupon).
-
-Search: Tavily API (free tier) + Wikipedia REST API.
-
-State: in-memory store (session) for column histories; simple IDs for cross-links.
+GPT-5 makes it possible.
+Now let’s start generating smart debates together. 🧠🔥
