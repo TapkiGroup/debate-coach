@@ -31,3 +31,7 @@ def _list_routes():
 @app.get("/health")
 def health():
     return {"status": "ok", "env": settings.env_summary()}
+
+@app.get("/api/health")
+def api_health():
+    return {"status": "ok"}

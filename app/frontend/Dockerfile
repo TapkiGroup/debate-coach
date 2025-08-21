@@ -8,20 +8,20 @@ RUN if [ -f package-lock.json ]; then npm ci; \
     else npm i; fi
 
 COPY . .
-
 ARG NEXT_PUBLIC_BACKEND_URL=/api
 ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
-
 RUN npm run build
 
 FROM node:20-alpine AS run
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=build /app/package.json /app/package-lock.json* /app/
+
+COPY --from=build /app/package.json /app/package.json
+
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm i --omit=dev; fi
+
 COPY --from=build /app/.next /app/.next
 COPY --from=build /app/public /app/public
-COPY --from=build /app/next.config.js /app/next.config.js 2>/dev/null || true
 
 EXPOSE 3000
 CMD ["npx","next","start","-p","3000","-H","0.0.0.0"]

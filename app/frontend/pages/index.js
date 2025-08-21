@@ -1,7 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function Home() {
-  const API = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
+  const API =
+    typeof window !== "undefined"
+      ? `${window.location.origin.replace(/\/$/, "")}/api`
+      : (process.env.NEXT_PUBLIC_BACKEND_URL || "/api");
+
+  useEffect(() => {
+    console.log("API base =", API);
+  }, []);
+
+  useEffect(() => {
+    newSession(mode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // State
   const [starting, setStarting] = useState(false);
@@ -12,9 +24,42 @@ export default function Home() {
   const [strength, setStrength] = useState(null);
 
   const [userText, setUserText] = useState("");
-  const [chat, setChat] = useState([]); // {role: "user"|"assistant", text: string}
+  const [chat, setChat] = useState([]); 
 
   // --- API helpers ---
+
+  async function tryPostJSON(paths, bodies, extraHeaders) {
+    const headers = { "Content-Type": "application/json", ...(extraHeaders || {}) };
+    const errors = [];
+    for (const p of (Array.isArray(paths) ? paths : [paths])) {
+      for (const body of (Array.isArray(bodies) ? bodies : [bodies])) {
+        try {
+          const res = await fetch(`${API}${p}`, { method: "POST", headers, body: JSON.stringify(body) });
+          if (res.ok) return { ok: true, path: p, body, data: await res.json(), status: res.status };
+          errors.push({ path: p, status: res.status, text: await res.text() });
+        } catch (e) {
+          errors.push({ path: p, err: String(e) });
+        }
+      }
+    }
+    return { ok: false, errors };
+  }
+
+  async function tryGetJSON(paths, query) {
+    const qs = query ? (query.startsWith("?") ? query : `?${query}`) : "";
+    const errors = [];
+    for (const p of (Array.isArray(paths) ? paths : [paths])) {
+      try {
+        const res = await fetch(`${API}${p}${qs}`);
+        if (res.ok) return { ok: true, path: p, data: await res.json(), status: res.status };
+        errors.push({ path: p, status: res.status, text: await res.text() });
+      } catch (e) {
+        errors.push({ path: p, err: String(e) });
+      }
+    }
+    return { ok: false, errors };
+  }
+
   async function newSession(initialMode = mode) {
     try {
       setStarting(true);
