@@ -29,8 +29,7 @@ services:
       dockerfile: Dockerfile
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_BACKEND_URL: /api
-      PORT: "3000"
+      NEXT_PUBLIC_BACKEND_URL: http://gateway/api
     depends_on:
       backend:
         condition: service_healthy
