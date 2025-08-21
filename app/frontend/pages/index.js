@@ -65,6 +65,7 @@ export default function Home() {
       setStarting(true);
 
       const paths = [
+        "/session",
         "/session/start",
         "/sessions/start",
         "/session/create",
