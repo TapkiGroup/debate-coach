@@ -20,14 +20,6 @@ app.add_middleware(
 app.include_router(session.router, prefix="/api")
 app.include_router(chat.router,    prefix="/api")
 
-@app.post("/api/session/start")
-def _fallback_start_session():
-    return {"session_id": str(uuid.uuid4())}
-
-@app.get("/api/_debug/routes")
-def _list_routes():
-    return {"paths": [r.path for r in app.routes if isinstance(r, APIRoute)]}
-
 @app.get("/health")
 def health():
     return {"status": "ok", "env": settings.env_summary()}
@@ -35,3 +27,13 @@ def health():
 @app.get("/api/health")
 def api_health():
     return {"status": "ok"}
+
+from fastapi.routing import APIRoute
+
+@app.get("/api/_debug/routes")
+def _list_routes():
+    routes = []
+    for r in app.routes:
+        if isinstance(r, APIRoute) and r.path.startswith("/api/"):
+            routes.append({"path": r.path, "methods": list(r.methods)})
+    return {"routes": routes}

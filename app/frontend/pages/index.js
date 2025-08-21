@@ -63,20 +63,53 @@ export default function Home() {
   async function newSession(initialMode = mode) {
     try {
       setStarting(true);
-      const r = await fetch(
-        `${API}/session/start?mode=${encodeURIComponent(initialMode)}`,
-        { method: "POST" }
-      );
-      if (!r.ok) {
-        const msg = await r.text();
-        throw new Error(`Session start failed: ${r.status} ${msg}`);
+
+      const paths = [
+        "/session/start",
+        "/sessions/start",
+        "/session/create",
+        "/sessions/create",
+        "/session/new",
+      ];
+
+      const bodies = [
+        undefined, // ?mode=...
+        { mode: initialMode },
+      ];
+
+      for (const p of paths) {
+        const r = await fetch(`${API}${p}?mode=${encodeURIComponent(initialMode)}`, { method: "POST" });
+        if (r.ok) {
+          const data = await r.json();
+          if (data?.session_id) {
+            setSessionId(data.session_id);
+            setColumns({ PRO: [], CON: [], SOURCES: [] });
+            setStrength(null);
+            setChat([]);
+            return;
+          }
+        }
       }
-      const data = await r.json();
-      if (!data?.session_id) throw new Error("No session_id in response");
-      setSessionId(data.session_id);
-      setColumns({ PRO: [], CON: [], SOURCES: [] });
-      setStrength(null);
-      setChat([]);
+
+      for (const p of paths) {
+        const r = await fetch(`${API}${p}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: initialMode }),
+        });
+        if (r.ok) {
+          const data = await r.json();
+          if (data?.session_id) {
+            setSessionId(data.session_id);
+            setColumns({ PRO: [], CON: [], SOURCES: [] });
+            setStrength(null);
+            setChat([]);
+            return;
+          }
+        }
+      }
+
+      throw new Error("No working /session start endpoint found");
     } catch (e) {
       console.error(e);
       alert(String(e));
@@ -85,90 +118,105 @@ export default function Home() {
     }
   }
 
+
   async function switchModeTo(newMode) {
     if (!sessionId) return alert("Start a session first!");
-    try {
-      const r = await fetch(`${API}/mode`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, mode: newMode }),
-      });
-      if (!r.ok) {
-        const msg = await r.text();
-        throw new Error(`Mode switch failed: ${msg}`);
+    const candidates = [
+      "/mode",
+      "/session/mode",
+      `/session/${sessionId}/mode`,
+    ];
+    const bodies = [
+      { session_id: sessionId, mode: newMode },
+      { session: sessionId, mode: newMode },
+      { mode: newMode }, // если ID берут из path
+    ];
+    for (const p of candidates) {
+      for (const body of bodies) {
+        const r = await fetch(`${API}${p}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (r.ok) {
+          setMode(newMode);
+          await refreshColumns();
+          return;
+        }
       }
-      await refreshColumns();
-      setMode(newMode);
-    } catch (e) {
-      console.error(e);
-      alert(String(e));
     }
+    alert("Mode switch failed (no matching endpoint)");
   }
+
 
   async function refreshColumns() {
     if (!sessionId) return;
-    try {
-      const r = await fetch(`${API}/columns?session_id=${sessionId}`);
-      if (!r.ok) {
-        const msg = await r.text();
-        throw new Error(`Columns failed: ${r.status} ${msg}`);
+    const tries = [
+      `${API}/columns?session_id=${encodeURIComponent(sessionId)}`,
+      `${API}/columns?session=${encodeURIComponent(sessionId)}`,
+      `${API}/session/${encodeURIComponent(sessionId)}/columns`,
+      `${API}/session/columns?session_id=${encodeURIComponent(sessionId)}`,
+    ];
+    for (const url of tries) {
+      const r = await fetch(url);
+      if (r.ok) {
+        const data = await r.json();
+        setColumns({
+          PRO: Array.isArray(data.PRO) ? data.PRO : [],
+          CON: Array.isArray(data.CON) ? data.CON : [],
+          SOURCES: Array.isArray(data.SOURCES) ? data.SOURCES : [],
+        });
+        return;
       }
-      const data = await r.json();
-      // Expecting { PRO: string[], CON: string[], SOURCES: string[] }
-      setColumns({
-        PRO: Array.isArray(data.PRO) ? data.PRO : [],
-        CON: Array.isArray(data.CON) ? data.CON : [],
-        SOURCES: Array.isArray(data.SOURCES) ? data.SOURCES : [],
-      });
-    } catch (e) {
-      console.error(e);
-      alert(String(e));
     }
   }
+
 
   async function send(text) {
     if (!sessionId) return alert("Start a session first!");
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    // Append user message locally
     setChat((c) => [...c, { role: "user", text: trimmed }]);
     setUserText("");
 
-    try {
-      const r = await fetch(`${API}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, user_text: trimmed }),
-      });
-      if (!r.ok) {
-        const msg = await r.text();
-        throw new Error(`Chat failed: ${r.status} ${msg}`);
+    const candidates = [
+      "/chat",
+      `/chat/${sessionId}`,
+      `/session/${sessionId}/chat`,
+      "/session/chat",
+    ];
+    const bodies = [
+      { session_id: sessionId, user_text: trimmed },
+      { session: sessionId, text: trimmed },
+      { text: trimmed },
+    ];
+
+    for (const p of candidates) {
+      for (const body of bodies) {
+        const r = await fetch(`${API}${p}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (r.ok) {
+          const data = await r.json();
+          const assistantText = data?.message || data?.reply || JSON.stringify(data, null, 2);
+          setChat((c) => [...c, { role: "assistant", text: assistantText }]);
+          if (data?.score && typeof data.score.value === "number") setStrength(data.score.value);
+          await refreshColumns();
+          return;
+        }
       }
-      const data = await r.json();
-
-      // Append assistant response
-      const assistantText = data?.message || data?.reply || JSON.stringify(data, null, 2);
-      setChat((c) => [...c, { role: "assistant", text: assistantText }]);
-
-      if (data && data.score && typeof data.score.value === "number") {
-        setStrength(data.score.value);
-      }
-
-      await refreshColumns();
-    } catch (e) {
-      console.error(e);
-      alert(String(e));
     }
+    alert("Chat failed (no matching endpoint)");
   }
 
-  // Autostart session on mount / reload
+
   useEffect(() => {
     newSession(mode);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // UI constants
   const styles = useMemo(
     () => ({
       app: {
