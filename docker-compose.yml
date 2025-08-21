@@ -7,7 +7,6 @@ services:
       dockerfile: Dockerfile
     env_file: ./.env
     working_dir: /app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000
     environment:
       AIMLAPI_BASE_URL: ${AIML_BASE_URL}
       AIMLAPI_API_KEY: ${AIML_API_KEY}
@@ -15,9 +14,9 @@ services:
       CHEAP_MODEL: ${AIML_MODEL_NANO}
       MAIN_MODEL: ${AIML_MODEL_HEAVY}
       TAVILY_API_KEY: ${TAVILY_API_KEY}
-      APP_PORT: "8000"
+      APP_PORT: "8080"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8001/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -29,23 +28,37 @@ services:
       context: ./app/frontend
       dockerfile: Dockerfile
     environment:
-      # фронт ходит внутрь сети на backend-сервис
-      NEXT_PUBLIC_BACKEND_URL: http://backend:8001/api
       NODE_ENV: production
+      NEXT_PUBLIC_BACKEND_URL: /api
+      PORT: "3000"
     depends_on:
       backend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     restart: unless-stopped
 
   gateway:
     image: nginx:1.25-alpine
     depends_on:
-      - frontend
-      - backend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
     ports:
-      - "8080:80"   
+      - "8080:80"
     volumes:
       - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     restart: unless-stopped
 
   tests:
