@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from enum import Enum
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
 import uuid
 
@@ -52,7 +52,7 @@ class Event(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:10])
     ts: datetime = Field(default_factory=datetime.utcnow)
     column: Column
-    payload: Dict[str, Any]
+    payload:  Union[Dict[str, Any], str]
 
 class SessionState(BaseModel):
     mode: Mode

@@ -21,10 +21,7 @@ def run_chat_turn(payload: ChatIn, store: SessionStore) -> ChatOut:
         st.has_new_claim_this_turn = True
         ev = Event(
             column=Column.PRO,
-            payload={
-                "summary_raw": extracted.get("original_text"),
-                "normalized": extracted.get("normalized"),
-            },
+            payload=f"You current statement: {extracted.get('normalized')}",
         )
         # persist + return
         store.append_event(payload.session_id, ev)
@@ -130,7 +127,21 @@ def run_chat_turn(payload: ChatIn, store: SessionStore) -> ChatOut:
             events_to_return.append(ev)
 
         fallacies = result.get("fallacies")
-        score = result.get("score")
+
+        score = Score(**score_obj)
+        score_text = f"Score: {score.value}/100"
+        evaluation_summary = ""
+        if score_obj.get("reasons"):
+            evaluation_summary = f"Short evaluation: {score_obj['reasons'][0]}"
+
+        # Combine
+        con_text = f"{score_text}\n{evaluation_summary}\n{critique_text}"
+        if fallacies_text:
+            con_text += "\n" + fallacies_text
+
+        events.append(Event(column=Column.CON, payload=con_text.strip()))
+        chat_reply = "I've provided a concise critique, score, and summary in the CON column."
+
         return ChatOut(chat_reply=result.get("chat_reply", "Done."), events=events_to_return, score=score, fallacies=fallacies)
 
     # === 7) Fallback — never lose the PRO update we already persisted

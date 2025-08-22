@@ -12,6 +12,11 @@ def score_claim(claim: str, context_hint: str = "") -> dict:
         data = json.loads(out)
         sc = data.get("score") or {}
         bullets = data.get("bullets") or []
-        return {"bullets": bullets, "score": sc}
+        # Validate score value
+        value = sc.get("value", 50)
+        if not isinstance(value, int) or not (0 <= value <= 100):
+            value = 50
+        reasons = sc.get("reasons", ["fallback"])
+        return {"bullets": bullets, "score": {"value": value, "reasons": reasons}}
     except Exception:
         return {"bullets": [], "score": {"value": 50, "reasons": ["fallback"]}}

@@ -3,7 +3,7 @@ import os
 import uuid
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routers import session, chat
+from api.routers import session, chat, columns
 from core.config import settings
 from fastapi.routing import APIRoute
 
@@ -19,6 +19,7 @@ app.add_middleware(
 
 app.include_router(session.router, prefix="/api")
 app.include_router(chat.router,    prefix="/api")
+app.include_router(columns.router, prefix="/api")
 
 @app.get("/health")
 def health():

@@ -351,7 +351,7 @@ export default function Home() {
             <div style={styles.colScroll}>
               {columns.PRO?.length ? (
                 columns.PRO.map((t, i) => (
-                  <div key={`pro-${i}`}>• {typeof t === "string" ? t : t.payload?.text || t.payload?.claim || JSON.stringify(t)}</div>
+                  <div key={t.id}> {typeof t.payload === "string" ? t.payload : JSON.stringify(t.payload)}</div>
                 ))
               ) : (
                 <span style={styles.small}>No pro points yet</span>
@@ -364,7 +364,9 @@ export default function Home() {
             <div style={styles.colScroll}>
               {columns.CON?.length ? (
                 columns.CON.map((t, i) => (
-                  <div key={`con-${i}`}>• {typeof t === "string" ? t : t.payload?.text || t.payload?.claim || JSON.stringify(t)}</div>
+                  <div key={t.id}>
+                    {typeof t.payload === "string" ? t.payload : JSON.stringify(t.payload)}
+                  </div>
                 ))
               ) : (
                 <span style={styles.small}>No con points yet</span>
@@ -414,16 +416,16 @@ export default function Home() {
       {/* RIGHT (soft orange) */}
       <div style={styles.rightPane}>
         <div style={styles.rightCard}>
-          <h3 style={{ margin: "0 0 6px 0" }}>Welcome to Debate Coach</h3>
+          <h3 style={{ margin: "0 0 6px 0" }}>Welcome to DebateMate!</h3>
           <div className="small">
-            This demo spins up a session automatically. Use the right panel to switch modes at any time.
+            DebateMate is an AI-powered platform for structured argumentation, pitch testing, critical feedback, expected objections.
           </div>
         </div>
 
         <div style={styles.rightCard}>
-          <h4 style={{ margin: "0 0 6px 0" }}>Debate Mode</h4>
+          <h4 style={{ margin: "0 0 6px 0" }}>Debate Me!</h4>
           <p style={{ margin: 0 }}>
-            Stress-test a claim. The model generates counters, pros/cons and sources.
+            Stress-test a claim or argument!
           </p>
           <div style={{ height: 8 }} />
           <button
@@ -437,9 +439,9 @@ export default function Home() {
         </div>
 
         <div style={styles.rightCard}>
-          <h4 style={{ margin: "0 0 6px 0" }}>Pitch Mode</h4>
+          <h4 style={{ margin: "0 0 6px 0" }}>Pitch Me!</h4>
           <p style={{ margin: 0 }}>
-            Test a pitch. The model produces tough objections and an overall score.
+            Test your pitch or presentation, to prepare for objections!
           </p>
           <div style={{ height: 8 }} />
           <button
