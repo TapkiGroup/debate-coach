@@ -3,13 +3,13 @@ from pydantic import BaseModel
 
 class Settings(BaseModel):
     # External LLM provider
-    AIMLAPI_BASE_URL: str = os.getenv("AIMLAPI_BASE_URL", "https://api.aimlapi.com/v1")
-    AIMLAPI_API_KEY: str | None = os.getenv("AIMLAPI_API_KEY")
+    AIMLAPI_BASE_URL: str = os.getenv("AIML_BASE_URL")
+    AIMLAPI_API_KEY: str | None = os.getenv("AIML_API_KEY")
 
     # Models
-    SMOL_MODEL: str = os.getenv("SMOL_MODEL", "testgpt-5-nano-2025-08-07")
-    CHEAP_MODEL: str = os.getenv("CHEAP_MODEL", "testgpt-5-nano-2025-08-07")
-    MAIN_MODEL: str = os.getenv("MAIN_MODEL", "gpt-5-chat-latest")
+    SMOL_MODEL: str = os.getenv("AIML_MODEL_NANO")
+    CHEAP_MODEL: str = os.getenv("AIML_MODEL_NANO")
+    MAIN_MODEL: str = os.getenv("AIML_MODEL_HEAVY")
 
     # Server
     APP_HOST: str = os.getenv("APP_HOST", "0.0.0.0")

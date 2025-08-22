@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from core.llm.smol_client import chat as smol_chat
+from core.llm.main_client import chat
 from agents.triage.triage_agent import classify_intent
 from agents.planner.planner_agent import plan_steps
 from agents.tools.parsing import extract_claim_or_empty
@@ -32,7 +32,7 @@ def decide(mode: Mode, last_user_text: str, session_flags: dict) -> dict:
 
 SESSION_FLAGS: {json.dumps(flags, ensure_ascii=False)}
 """
-    raw = smol_chat(system=sys, user=user, temperature=0.0, max_tokens=300)
+    raw = chat(system=sys, user=user, temperature=0.0, max_tokens=300)
     try:
         cmd = json.loads(raw)
     except Exception:

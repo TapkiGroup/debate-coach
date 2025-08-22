@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from core.llm.cheap_client import chat as cheap_chat
+from core.llm.main_client import chat
 
 _TRIAGE_PROMPT = Path("prompts/triage.txt").read_text(encoding="utf-8")
 
@@ -12,7 +12,7 @@ MODE: {mode}
 USER:
 {user_text}
 """
-    out = cheap_chat(system=sys, user=user, temperature=0.0, max_tokens=300)
+    out = chat(system=sys, user=user, temperature=0.0, max_tokens=300)
     try:
         data = json.loads(out)
         if isinstance(data, dict) and "intent" in data and "has_new_claim" in data:

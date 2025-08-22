@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from core.llm.cheap_client import chat as cheap_chat
+from core.llm.main_client import chat
 
 _PLANNER_PROMPT = Path("prompts/planner.txt").read_text(encoding="utf-8")
 
@@ -12,7 +12,7 @@ MODE: {mode}
 INTENT: {intent}
 FLAGS: {json.dumps(flags)}
 """
-    out = cheap_chat(system=sys, user=user, temperature=0.0, max_tokens=200)
+    out = chat(system=sys, user=user, temperature=0.0, max_tokens=200)
     try:
         data = json.loads(out)
         steps = data.get("plan_steps", [])

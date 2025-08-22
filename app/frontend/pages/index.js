@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function Home() {
@@ -64,52 +66,20 @@ export default function Home() {
     try {
       setStarting(true);
 
-      const paths = [
-        "/session/start",
-        "/sessions/start",
-        "/session/create",
-        "/sessions/create",
-        "/session/new",
-      ];
-
-      const bodies = [
-        undefined, // ?mode=...
-        { mode: initialMode },
-      ];
-
-      for (const p of paths) {
-        const r = await fetch(`${API}${p}?mode=${encodeURIComponent(initialMode)}`, { method: "POST" });
-        if (r.ok) {
-          const data = await r.json();
-          if (data?.session_id) {
-            setSessionId(data.session_id);
-            setColumns({ PRO: [], CON: [], SOURCES: [] });
-            setStrength(null);
-            setChat([]);
-            return;
-          }
+      // Use the correct backend endpoint
+      const r = await fetch(`${API}/session?mode=${encodeURIComponent(initialMode)}`, { method: "POST" });
+      if (r.ok) {
+        const data = await r.json();
+        if (data?.session_id) {
+          setSessionId(data.session_id);
+          setColumns({ PRO: [], CON: [], SOURCES: [] });
+          setStrength(null);
+          setChat([]);
+          return;
         }
       }
 
-      for (const p of paths) {
-        const r = await fetch(`${API}${p}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode: initialMode }),
-        });
-        if (r.ok) {
-          const data = await r.json();
-          if (data?.session_id) {
-            setSessionId(data.session_id);
-            setColumns({ PRO: [], CON: [], SOURCES: [] });
-            setStrength(null);
-            setChat([]);
-            return;
-          }
-        }
-      }
-
-      throw new Error("No working /session start endpoint found");
+      throw new Error("No working /session endpoint found");
     } catch (e) {
       console.error(e);
       alert(String(e));
@@ -118,47 +88,16 @@ export default function Home() {
     }
   }
 
-
   async function switchModeTo(newMode) {
-    if (!sessionId) return alert("Start a session first!");
-    const candidates = [
-      "/mode",
-      "/session/mode",
-      `/session/${sessionId}/mode`,
-    ];
-    const bodies = [
-      { session_id: sessionId, mode: newMode },
-      { session: sessionId, mode: newMode },
-      { mode: newMode }, // если ID берут из path
-    ];
-    for (const p of candidates) {
-      for (const body of bodies) {
-        const r = await fetch(`${API}${p}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        if (r.ok) {
-          setMode(newMode);
-          await refreshColumns();
-          return;
-        }
-      }
-    }
-    alert("Mode switch failed (no matching endpoint)");
+    await newSession(newMode);
+    setMode(newMode);
+    await refreshColumns();
   }
-
 
   async function refreshColumns() {
     if (!sessionId) return;
-    const tries = [
-      `${API}/columns?session_id=${encodeURIComponent(sessionId)}`,
-      `${API}/columns?session=${encodeURIComponent(sessionId)}`,
-      `${API}/session/${encodeURIComponent(sessionId)}/columns`,
-      `${API}/session/columns?session_id=${encodeURIComponent(sessionId)}`,
-    ];
-    for (const url of tries) {
-      const r = await fetch(url);
+    try {
+      const r = await fetch(`${API}/columns?session_id=${encodeURIComponent(sessionId)}`);
       if (r.ok) {
         const data = await r.json();
         setColumns({
@@ -166,11 +105,13 @@ export default function Home() {
           CON: Array.isArray(data.CON) ? data.CON : [],
           SOURCES: Array.isArray(data.SOURCES) ? data.SOURCES : [],
         });
-        return;
+      } else {
+        setColumns({ PRO: [], CON: [], SOURCES: [] });
       }
+    } catch {
+      setColumns({ PRO: [], CON: [], SOURCES: [] });
     }
   }
-
 
   async function send(text) {
     if (!sessionId) return alert("Start a session first!");
@@ -180,38 +121,29 @@ export default function Home() {
     setChat((c) => [...c, { role: "user", text: trimmed }]);
     setUserText("");
 
-    const candidates = [
-      "/chat",
-      `/chat/${sessionId}`,
-      `/session/${sessionId}/chat`,
-      "/session/chat",
-    ];
-    const bodies = [
-      { session_id: sessionId, user_text: trimmed },
-      { session: sessionId, text: trimmed },
-      { text: trimmed },
-    ];
-
-    for (const p of candidates) {
-      for (const body of bodies) {
-        const r = await fetch(`${API}${p}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        if (r.ok) {
-          const data = await r.json();
-          const assistantText = data?.message || data?.reply || JSON.stringify(data, null, 2);
-          setChat((c) => [...c, { role: "assistant", text: assistantText }]);
-          if (data?.score && typeof data.score.value === "number") setStrength(data.score.value);
-          await refreshColumns();
-          return;
+    try {
+      const response = await fetch(`${API}/chat`, {
+        method: "POST",
+        body: JSON.stringify({ session_id: sessionId, user_text: trimmed }),
+        headers: { "Content-Type": "application/json" },
+      });
+      let reply = "⚠️ No reply from model.";
+      if (response.ok) {
+        const data = await response.json();
+        if (typeof data.chat_reply === "string" && data.chat_reply.trim()) {
+          reply = data.chat_reply;
         }
+        if (data?.score && typeof data.score.value === "number") setStrength(data.score.value);
+      } else {
+        reply = `⚠️ Chat failed: ${await response.text()}`;
       }
+      setChat(prev => [...prev, { role: "assistant", text: reply }]);
+      await refreshColumns();
+    } catch (e) {
+      setChat(prev => [...prev, { role: "assistant", text: `⚠️ Chat error: ${String(e)}` }]);
+      await refreshColumns();
     }
-    alert("Chat failed (no matching endpoint)");
   }
-
 
   useEffect(() => {
     newSession(mode);
@@ -405,7 +337,9 @@ export default function Home() {
             <div style={styles.colHeader}>SOURCES</div>
             <div style={styles.colScroll}>
               {columns.SOURCES?.length ? (
-                columns.SOURCES.map((t, i) => <div key={`src-${i}`}>• {t}</div>)
+                columns.SOURCES.map((t, i) => (
+                  <div key={`src-${i}`}>• {typeof t === "string" ? t : t.title || t.url || JSON.stringify(t)}</div>
+                ))
               ) : (
                 <span style={styles.small}>No sources yet</span>
               )}
@@ -416,7 +350,9 @@ export default function Home() {
             <div style={styles.colHeader}>PRO</div>
             <div style={styles.colScroll}>
               {columns.PRO?.length ? (
-                columns.PRO.map((t, i) => <div key={`pro-${i}`}>• {t}</div>)
+                columns.PRO.map((t, i) => (
+                  <div key={`pro-${i}`}>• {typeof t === "string" ? t : t.payload?.text || t.payload?.claim || JSON.stringify(t)}</div>
+                ))
               ) : (
                 <span style={styles.small}>No pro points yet</span>
               )}
@@ -427,14 +363,15 @@ export default function Home() {
             <div style={styles.colHeader}>CON</div>
             <div style={styles.colScroll}>
               {columns.CON?.length ? (
-                columns.CON.map((t, i) => <div key={`con-${i}`}>• {t}</div>)
+                columns.CON.map((t, i) => (
+                  <div key={`con-${i}`}>• {typeof t === "string" ? t : t.payload?.text || t.payload?.claim || JSON.stringify(t)}</div>
+                ))
               ) : (
                 <span style={styles.small}>No con points yet</span>
               )}
             </div>
           </div>
         </div>
-
         {/* Score row under PRO (center cell) */}
         <div style={styles.scoreRow}>
           <div style={styles.scoreCell}></div>
