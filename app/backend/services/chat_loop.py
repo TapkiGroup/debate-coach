@@ -50,10 +50,14 @@ def run_chat_turn(payload: ChatIn, store: SessionStore) -> ChatOut:
             return ChatOut(
                 chat_reply="Got your position. Should I evaluate it, generate objections, or gather sources?",
                 events=events_to_return,
+                score=score,
+                fallacies=fallacies,
             )
         return ChatOut(
             chat_reply="Please paste your argument/pitch so I can help. One or two sentences is enough.",
             events=[],
+            score=score,
+            fallacies=fallacies,
         )
 
     # === 4) OFFER_ACTIONS: return menu; PRO (if any) already persisted
@@ -61,6 +65,8 @@ def run_chat_turn(payload: ChatIn, store: SessionStore) -> ChatOut:
         return ChatOut(
             chat_reply="What should I do next? Options: evaluate_argument / give_objections (or objections for pitch) / research.",
             events=events_to_return,
+            score=score,
+            fallacies=fallacies,
         )
 
     # === 5) UPDATE_PRO_ONLY: we already persisted PRO; now offer actions
@@ -68,6 +74,8 @@ def run_chat_turn(payload: ChatIn, store: SessionStore) -> ChatOut:
         return ChatOut(
             chat_reply="Got your position. Should I evaluate it, generate objections, or gather sources?",
             events=events_to_return,
+            score=score,
+            fallacies=fallacies,
         )
 
     # === 6) RUN_PIPELINE → execute one step per MVP
@@ -106,7 +114,7 @@ def run_chat_turn(payload: ChatIn, store: SessionStore) -> ChatOut:
             meta_ev = Event(column=Column.SOURCES, payload={"added_sids": sids, "count": len(sids)})
             events_to_return.append(meta_ev)
             chat_reply = "I've added relevant neutral sources to the SOURCES column."
-            return ChatOut(chat_reply=chat_reply, events=events_to_return)
+            return ChatOut(chat_reply=chat_reply, events=events_to_return, score=score, fallacies=fallacies)
 
         # --- Non-research executors ---
         if mode == Mode.debate_counter:
@@ -118,7 +126,7 @@ def run_chat_turn(payload: ChatIn, store: SessionStore) -> ChatOut:
                 pin = "objections"
             if intent == "evaluate_argument":
                 pin = "ruthless_impression"
-            result = pitch_executor.execute(intent=pin, pitch_text=claim, need_fallacy=need_fallacy)
+            result = pitch_executor.execute(intent=pin, pitch_text=claim, need_fallacy=False)
 
         # Persist CON events; append to return list
         for ev in result.get("events", []):
@@ -127,25 +135,19 @@ def run_chat_turn(payload: ChatIn, store: SessionStore) -> ChatOut:
             events_to_return.append(ev)
 
         fallacies = result.get("fallacies")
+        score = result.get("score")
 
-        score = Score(**score_obj)
-        score_text = f"Score: {score.value}/100"
-        evaluation_summary = ""
-        if score_obj.get("reasons"):
-            evaluation_summary = f"Short evaluation: {score_obj['reasons'][0]}"
-
-        # Combine
-        con_text = f"{score_text}\n{evaluation_summary}\n{critique_text}"
-        if fallacies_text:
-            con_text += "\n" + fallacies_text
-
-        events.append(Event(column=Column.CON, payload=con_text.strip()))
-        chat_reply = "I've provided a concise critique, score, and summary in the CON column."
-
-        return ChatOut(chat_reply=result.get("chat_reply", "Done."), events=events_to_return, score=score, fallacies=fallacies)
+        return ChatOut(
+            chat_reply=result.get("chat_reply", "Done."),
+            events=events_to_return,
+            score=score,
+            fallacies=fallacies,
+        )
 
     # === 7) Fallback — never lose the PRO update we already persisted
     return ChatOut(
         chat_reply="I captured your message. Would you like me to evaluate, object, or research?",
         events=events_to_return,
+        score=score,
+        fallacies=fallacies,
     )

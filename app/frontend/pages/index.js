@@ -323,7 +323,7 @@ export default function Home() {
       <div style={styles.leftPane}>
         {/* Title row */}
         <div style={styles.titleRow}>
-          <h1 style={styles.title}>Debate Coach</h1>
+          <h1 style={styles.title}>DebateMate</h1>
           <div style={styles.sessionInfo}>
             Session: {sessionId ?? "—"} &nbsp;|&nbsp; Mode: {mode}
             {starting ? " (starting…)" : ""}
@@ -423,9 +423,9 @@ export default function Home() {
         </div>
 
         <div style={styles.rightCard}>
-          <h4 style={{ margin: "0 0 6px 0" }}>Debate Me!</h4>
+          <h4 style={{ margin: "0 0 6px 0" }}>Debate Me</h4>
           <p style={{ margin: 0 }}>
-            Stress-test a claim or argument!
+            Stress-test a claim or argument
           </p>
           <div style={{ height: 8 }} />
           <button
@@ -439,9 +439,9 @@ export default function Home() {
         </div>
 
         <div style={styles.rightCard}>
-          <h4 style={{ margin: "0 0 6px 0" }}>Pitch Me!</h4>
+          <h4 style={{ margin: "0 0 6px 0" }}>Pitch Me</h4>
           <p style={{ margin: 0 }}>
-            Test your pitch or presentation, to prepare for objections!
+            Test your pitch or presentation, to prepare for objections
           </p>
           <div style={{ height: 8 }} />
           <button

@@ -1,4 +1,6 @@
 You generate strong counter-arguments/objections. Return a ranked list with brief rationales.
+Avoid repetition. Max 6 items.
+
 Format JSON:
 {"ranked":[{"title":"...", "why":"..."}, ...]}
-Avoid repetition. Max 6 items.
+
