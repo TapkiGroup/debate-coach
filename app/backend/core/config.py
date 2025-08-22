@@ -5,6 +5,8 @@ class Settings(BaseModel):
     # External LLM provider
     AIMLAPI_BASE_URL: str = os.getenv("AIML_BASE_URL")
     AIMLAPI_API_KEY: str | None = os.getenv("AIML_API_KEY")
+    # External search provider
+    TAVILY_API_KEY: str | None = os.getenv("TAVILY_API_KEY")  
 
     # Models
     SMOL_MODEL: str = os.getenv("AIML_MODEL_NANO")
@@ -13,7 +15,7 @@ class Settings(BaseModel):
 
     # Server
     APP_HOST: str = os.getenv("APP_HOST", "0.0.0.0")
-    APP_PORT: int = int(os.getenv("APP_PORT", "8080"))
+    APP_PORT: int = int(os.getenv("PORT", os.getenv("APP_PORT", "8080")))
 
     def env_summary(self) -> dict:
         return {

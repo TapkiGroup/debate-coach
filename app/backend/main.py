@@ -24,6 +24,10 @@ app.include_router(chat.router,    prefix="/api")
 def health():
     return {"status": "ok", "env": settings.env_summary()}
 
+@app.get("/healthz")
+def healthz():
+    return "ok"
+
 @app.get("/api/health")
 def api_health():
     return {"status": "ok"}

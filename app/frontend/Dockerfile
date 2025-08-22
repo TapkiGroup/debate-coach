@@ -24,4 +24,4 @@ COPY --from=build /app/.next /app/.next
 COPY --from=build /app/public /app/public
 
 EXPOSE 3000
-CMD ["npx","next","start","-p","3000","-H","0.0.0.0"]
+CMD npx next start -p ${PORT:-3000} -H 0.0.0.0
