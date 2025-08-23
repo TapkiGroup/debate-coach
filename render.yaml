@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: debate-mate-api
+    name: debate-mate-api-ssr
     env: docker
     rootDir: app/backend
     dockerfilePath: app/backend/Docker
@@ -22,7 +22,7 @@ services:
         sync: false
 
   - type: web
-    name: debate-mate-web-docker 
+    name: debate-mate-web-ssr
     env: docker
     rootDir: app/frontend
     dockerfilePath: app/frontend/Docker
