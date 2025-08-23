@@ -11,10 +11,7 @@ app = FastAPI(title="Debate Coach", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://debate-coach.pages.dev",
-        "http://localhost:3000"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,6 +21,7 @@ app.include_router(session.router, prefix="/api")
 app.include_router(chat.router,    prefix="/api")
 app.include_router(columns.router, prefix="/api")
 
+
 @app.get("/health")
 def health():
     return {"status": "ok", "env": settings.env_summary()}
@@ -32,11 +30,9 @@ def health():
 def healthz():
     return "ok"
 
-@app.get("/health")
-def health():
-    return {"ok": True}
-
-from fastapi.routing import APIRoute
+@app.get("/api/health")
+def api_health():
+    return {"status": "ok"}
 
 @app.get("/api/_debug/routes")
 def _list_routes():
