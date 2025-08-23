@@ -3,7 +3,7 @@ services:
     name: debate-mate-api
     env: docker
     rootDir: app/backend
-    dockerfilePath: Docker
+    dockerfilePath: app/backend/Docker
     plan: free
     autoDeploy: true
     healthCheckPath: /healthz
@@ -25,7 +25,7 @@ services:
     name: debate-mate-web-docker 
     env: docker
     rootDir: app/frontend
-    dockerfilePath: Docker
+    dockerfilePath: app/frontend/Docker
     plan: free
     autoDeploy: true
     healthCheckPath: /
