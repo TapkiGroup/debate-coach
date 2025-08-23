@@ -30,11 +30,11 @@ services:
     autoDeploy: true
     healthCheckPath: /
     envVars:
-      - key: NEXT_PUBLIC_BACKEND_ORIGIN
+      - key: NEXT_PUBLIC_BACKEND_HOST
         fromService:
           type: web
           name: debate-coach-api
-          property: url
+          property: host
       - key: NEXT_PUBLIC_BACKEND_URL
         value: /api
       - key: PORT
