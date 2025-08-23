@@ -1,31 +1,41 @@
 services:
-  # --- Backend (FastAPI via Docker) ---
   - type: web
-    name: debate-backend
-    env: docker             
-    rootDir: app/backend      
-    dockerfilePath: Dockerfile 
+    name: debate-mate-api
+    env: docker
+    rootDir: app/backend
+    dockerfilePath: app/backend/Docker
+    plan: free
     autoDeploy: true
+    healthCheckPath: /healthz
     envVars:
       - key: PORT
-        value: 8000
-      - key: CORS_ORIGINS
-        fromService:
-          name: debate-frontend
-          type: web
-          envVarKey: RENDER_EXTERNAL_URL
-    healthCheckPath: /health
+        value: 8080
+      - key: AIML_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: AIML_BASE_URL
+        sync: false
+      - key: AIML_MODEL_NANO
+        sync: false
+      - key: AIML_MODEL_HEAVY
+        sync: false
 
-  # --- Frontend (Next.js static export) ---
   - type: web
-    name: debate-frontend
-    env: static
+    name: debate-mate-web
+    env: docker
     rootDir: app/frontend
-    buildCommand: npm ci && npm run build && npm run export
-    staticPublishPath: out
+    dockerfilePath: app/frontend/Docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /
     envVars:
       - key: NEXT_PUBLIC_BACKEND_ORIGIN
         fromService:
-          name: debate-backend
           type: web
-          envVarKey: RENDER_EXTERNAL_URL
+          name: debate-coach-api
+          property: url
+      - key: NEXT_PUBLIC_BACKEND_URL
+        value: /api
+      - key: PORT
+        value: 3000
