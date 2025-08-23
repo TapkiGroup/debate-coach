@@ -1,30 +1,25 @@
 services:
-  # --- Backend (Docker) ---
+  # --- Backend (FastAPI via Docker) ---
   - type: web
     name: debate-backend
     runtime: docker
-    dockerContext: backend
-    dockerfilePath: backend/Dockerfile
-    plan: free
+    dockerContext: app/backend           
+    dockerfilePath: app/backend/Dockerfile
     autoDeployTrigger: commit
     envVars:
-      - key: PORT
-        value: "8000"                  
+      - key: PORT                         
+        value: "8000"
       - key: CORS_ORIGINS
         value: https://debate-frontend.onrender.com
 
-  # --- Frontend (Static Site) ---
+  # --- Frontend (Next.js SSR) ---
   - type: web
     name: debate-frontend
-    runtime: static
-    rootDir: frontend
+    runtime: node
+    rootDir: app/frontend             
     buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    startCommand: npm run start -- -p $PORT
     autoDeployTrigger: commit
     envVars:
-      - key: VITE_API_URL             
+      - key: NEXT_PUBLIC_API_URL        
         value: https://debate-backend.onrender.com
-    routes:
-      - type: rewrite                
-        source: "/*"
-        destination: "/index.html"
