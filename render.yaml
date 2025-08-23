@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: debate-mate-api-ssr
+    name: debate-coach-api
     env: docker
     rootDir: app/backend
-    dockerfilePath: Docker
+    dockerfilePath: app/backend/Docker
     plan: free
     autoDeploy: true
     healthCheckPath: /healthz
@@ -22,16 +22,20 @@ services:
         sync: false
 
   - type: web
-    name: debate-mate-web-docker
+    name: debate-coach-web
     env: docker
     rootDir: app/frontend
-    dockerfilePath: Docker
+    dockerfilePath: app/frontend/Docker
     plan: free
     autoDeploy: true
     healthCheckPath: /
     envVars:
-      # https://debate-mate-api-ssr.onrender.com/api
+      - key: NEXT_PUBLIC_BACKEND_ORIGIN
+        fromService:
+          type: web
+          name: debate-coach-api
+          property: url
       - key: NEXT_PUBLIC_BACKEND_URL
-        value: https://REPLACE_ME_WITH_API_URL/api
+        value: /api
       - key: PORT
         value: 3000
