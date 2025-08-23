@@ -6,67 +6,36 @@ export default function Home() {
   const API =
     typeof window !== "undefined"
       ? `${window.location.origin.replace(/\/$/, "")}/api`
-      : (process.env.NEXT_PUBLIC_BACKEND_URL || "/api");
+      : process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
 
-  useEffect(() => {
-    console.log("API base =", API);
-  }, []);
-
-  useEffect(() => {
-    newSession(mode);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // State
+  // --- State ---
   const [starting, setStarting] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [mode, setMode] = useState("debate_counter");
 
-  const [columns, setColumns] = useState({ PRO: [], CON: [], SOURCES: [] });
+  const [columns, setColumns] = useState({
+    PRO: [],
+    CON: [],
+    SOURCES: [],
+  });
+
+  // Score: show N/100. reason
   const [strength, setStrength] = useState(null);
+  const [lastReason, setLastReason] = useState("");
 
   const [userText, setUserText] = useState("");
-  const [chat, setChat] = useState([]); 
+  const [chat, setChat] = useState([]);
+  const [fallacies, setFallacies] = useState([]); // optional “wow” panel
 
-  // --- API helpers ---
-
-  async function tryPostJSON(paths, bodies, extraHeaders) {
-    const headers = { "Content-Type": "application/json", ...(extraHeaders || {}) };
-    const errors = [];
-    for (const p of (Array.isArray(paths) ? paths : [paths])) {
-      for (const body of (Array.isArray(bodies) ? bodies : [bodies])) {
-        try {
-          const res = await fetch(`${API}${p}`, { method: "POST", headers, body: JSON.stringify(body) });
-          if (res.ok) return { ok: true, path: p, body, data: await res.json(), status: res.status };
-          errors.push({ path: p, status: res.status, text: await res.text() });
-        } catch (e) {
-          errors.push({ path: p, err: String(e) });
-        }
-      }
-    }
-    return { ok: false, errors };
-  }
-
-  async function tryGetJSON(paths, query) {
-    const qs = query ? (query.startsWith("?") ? query : `?${query}`) : "";
-    const errors = [];
-    for (const p of (Array.isArray(paths) ? paths : [paths])) {
-      try {
-        const res = await fetch(`${API}${p}${qs}`);
-        if (res.ok) return { ok: true, path: p, data: await res.json(), status: res.status };
-        errors.push({ path: p, status: res.status, text: await res.text() });
-      } catch (e) {
-        errors.push({ path: p, err: String(e) });
-      }
-    }
-    return { ok: false, errors };
-  }
+  // --- Helpers ---
+  const trimPayload = (p) => {
+    const s = typeof p === "string" ? p : JSON.stringify(p);
+    return s.replace(/\n{3,}/g, "\n\n").trim(); // collapse extra blank lines
+  };
 
   async function newSession(initialMode = mode) {
     try {
       setStarting(true);
-
-      // Use the correct backend endpoint
       const r = await fetch(`${API}/session?mode=${encodeURIComponent(initialMode)}`, { method: "POST" });
       if (r.ok) {
         const data = await r.json();
@@ -74,30 +43,33 @@ export default function Home() {
           setSessionId(data.session_id);
           setColumns({ PRO: [], CON: [], SOURCES: [] });
           setStrength(null);
+          setLastReason("");
           setChat([]);
-          return;
+          setFallacies([]);
+          return data.session_id;
         }
       }
-
       throw new Error("No working /session endpoint found");
     } catch (e) {
       console.error(e);
       alert(String(e));
+      return null;
     } finally {
       setStarting(false);
     }
   }
 
   async function switchModeTo(newMode) {
-    await newSession(newMode);
     setMode(newMode);
-    await refreshColumns();
+    const newId = await newSession(newMode);
+    if (newId) await refreshColumns(newId);
   }
 
-  async function refreshColumns() {
-    if (!sessionId) return;
+  async function refreshColumns(forId) {
+    const id = forId ?? sessionId;
+    if (!id) return;
     try {
-      const r = await fetch(`${API}/columns?session_id=${encodeURIComponent(sessionId)}`);
+      const r = await fetch(`${API}/columns?session_id=${encodeURIComponent(id)}`);
       if (r.ok) {
         const data = await r.json();
         setColumns({
@@ -133,22 +105,30 @@ export default function Home() {
         if (typeof data.chat_reply === "string" && data.chat_reply.trim()) {
           reply = data.chat_reply;
         }
-        if (data?.score && typeof data.score.value === "number") setStrength(data.score.value);
+        if (data?.score && typeof data.score.value === "number") {
+          setStrength(data.score.value);
+          const r0 = Array.isArray(data.score.reasons) && data.score.reasons.length ? String(data.score.reasons[0]) : "";
+          setLastReason(r0);
+        }
+        if (Array.isArray(data.fallacies)) setFallacies(data.fallacies);
       } else {
         reply = `⚠️ Chat failed: ${await response.text()}`;
       }
-      setChat(prev => [...prev, { role: "assistant", text: reply }]);
+      setChat((prev) => [...prev, { role: "assistant", text: reply }]);
       await refreshColumns();
     } catch (e) {
-      setChat(prev => [...prev, { role: "assistant", text: `⚠️ Chat error: ${String(e)}` }]);
+      setChat((prev) => [...prev, { role: "assistant", text: `⚠️ Chat error: ${String(e)}` }]);
       await refreshColumns();
     }
   }
 
+  // Start session once
   useEffect(() => {
     newSession(mode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // --- Layout ---
   const styles = useMemo(
     () => ({
       app: {
@@ -161,7 +141,7 @@ export default function Home() {
         background: "#FFF9DB", // pale yellow
         display: "flex",
         flexDirection: "column",
-        padding: "16px 16px 0 16px",
+        padding: "16px 16px 12px 16px",
         gap: 12,
         minWidth: 0,
       },
@@ -172,34 +152,50 @@ export default function Home() {
         display: "flex",
         flexDirection: "column",
         gap: 16,
-        minWidth: 240,
+        minWidth: 260,
       },
       titleRow: {
         display: "flex",
         alignItems: "baseline",
         justifyContent: "space-between",
       },
-      title: {
-        margin: 0,
-        fontSize: 24,
-        fontWeight: 700,
-      },
-      sessionInfo: {
-        fontSize: 12,
-        opacity: 0.7,
-      },
-      threeColsRow: {
+      title: { margin: 0, fontSize: 24, fontWeight: 700 },
+      sessionInfo: { fontSize: 12, opacity: 0.7 },
+
+      // MAIN STACK IN LEFT PANE:
+      // [Columns area ~ 2/3] -> [Score thin band] -> [Chat bottom ~ 1/4]
+      columnsArea: {
+        flex: 3, // ~ 3/4 minus score band => ~2/3 overall
+        minHeight: 0,
         display: "grid",
-        gridTemplateColumns: "1fr 1fr 1fr",
+        gridTemplateColumns: "1fr 2fr 2fr",
         gap: 12,
-        height: 240, // fixed height + scroll
       },
+      scoreBand: {
+        height: 60,
+        display: "grid",
+        gridTemplateColumns: "1fr 3fr 1fr",
+        gap: 12,
+      },
+      chatArea: {
+        flex: 1, // bottom quarter
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+        border: "1px solid rgba(0,0,0,0.1)",
+        borderRadius: 8,
+        background: "#FFFFFF",
+        overflow: "hidden",
+      },
+
+      // Column styles
       col: {
         border: "1px solid rgba(0,0,0,0.1)",
         borderRadius: 8,
         background: "#FFFFFF",
         display: "flex",
         flexDirection: "column",
+        minHeight: 0,
         overflow: "hidden",
       },
       colHeader: {
@@ -216,31 +212,29 @@ export default function Home() {
         fontSize: 14,
         lineHeight: 1.35,
       },
-      scoreRow: {
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr 1fr",
-        gap: 12,
+      item: {
+        paddingBottom: 8,
+        marginBottom: 8,
+        borderBottom: "1px dashed rgba(0,0,0,0.18)", // visible divider
       },
+      small: { fontSize: 12, opacity: 0.7 },
+
+      // Score cell
       scoreCell: {
-        height: 56,
+        height: "100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "transparent",
+        background: "#FFF5E6",
+        border: "1px solid rgba(0,0,0,0.06)",
         borderRadius: 8,
         fontWeight: 700,
-        fontSize: 18,
+        fontSize: 16,
+        textAlign: "center",
+        padding: "0 10px",
       },
-      chatWrap: {
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        height: 280, // fixed height
-        border: "1px solid rgba(0,0,0,0.1)",
-        borderRadius: 8,
-        background: "#FFFFFF",
-        overflow: "hidden",
-      },
+
+      // Chat
       chatScroll: {
         flex: 1,
         overflowY: "auto",
@@ -289,6 +283,14 @@ export default function Home() {
         fontWeight: 700,
         cursor: "pointer",
       },
+
+      // Right cards
+      rightCard: {
+        background: "rgba(255,255,255,0.55)",
+        border: "1px solid rgba(0,0,0,0.08)",
+        borderRadius: 10,
+        padding: 12,
+      },
       modeBtn: {
         padding: "10px 12px",
         borderRadius: 8,
@@ -298,13 +300,6 @@ export default function Home() {
         cursor: "pointer",
         textAlign: "center",
       },
-      rightCard: {
-        background: "rgba(255,255,255,0.55)",
-        border: "1px solid rgba(0,0,0,0.08)",
-        borderRadius: 10,
-        padding: 12,
-      },
-      small: { fontSize: 12, opacity: 0.7 },
     }),
     []
   );
@@ -312,60 +307,67 @@ export default function Home() {
   // auto-scroll chat
   const scrollRef = useRef(null);
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [chat]);
+
+  useEffect(() => {
+    console.log("API base =", API);
+  }, [API]);
 
   return (
     <div style={styles.app}>
-      {/* LEFT (pale yellow) */}
+      {/* LEFT */}
       <div style={styles.leftPane}>
-        {/* Title row */}
+        {/* Title */}
         <div style={styles.titleRow}>
           <h1 style={styles.title}>DebateMate</h1>
           <div style={styles.sessionInfo}>
-            Session: {sessionId ?? "—"} &nbsp;|&nbsp; Mode: {mode}
-            {starting ? " (starting…)" : ""}
+            Session: {sessionId ?? "—"} &nbsp;|&nbsp; Mode: {mode} {starting ? " (starting…)" : ""}
           </div>
         </div>
 
-        {/* Three columns: SOURCES · PRO · CON */}
-        <div style={styles.threeColsRow}>
+        {/* Columns area (~2/3) */}
+        <div style={styles.columnsArea}>
           {/* SOURCES */}
           <div style={styles.col}>
             <div style={styles.colHeader}>SOURCES</div>
             <div style={styles.colScroll}>
               {columns.SOURCES?.length ? (
                 columns.SOURCES.map((t, i) => (
-                  <div key={`src-${i}`}>• {typeof t === "string" ? t : t.title || t.url || JSON.stringify(t)}</div>
+                  <div key={`src-${i}`} style={styles.item}>
+                    • {typeof t === "string" ? t : t.title || t.url || JSON.stringify(t)}
+                  </div>
                 ))
               ) : (
                 <span style={styles.small}>No sources yet</span>
               )}
             </div>
           </div>
+
           {/* PRO */}
           <div style={styles.col}>
             <div style={styles.colHeader}>PRO</div>
             <div style={styles.colScroll}>
               {columns.PRO?.length ? (
-                columns.PRO.map((t, i) => (
-                  <div key={t.id}> {typeof t.payload === "string" ? t.payload : JSON.stringify(t.payload)}</div>
+                columns.PRO.map((t) => (
+                  <div key={t.id} style={styles.item}>
+                    {trimPayload(t.payload)}
+                  </div>
                 ))
               ) : (
                 <span style={styles.small}>No pro points yet</span>
               )}
             </div>
           </div>
+
           {/* CON */}
           <div style={styles.col}>
             <div style={styles.colHeader}>CON</div>
             <div style={styles.colScroll}>
               {columns.CON?.length ? (
-                columns.CON.map((t, i) => (
-                  <div key={t.id}>
-                    {typeof t.payload === "string" ? t.payload : JSON.stringify(t.payload)}
+                columns.CON.map((t) => (
+                  <div key={t.id} style={styles.item}>
+                    {trimPayload(t.payload)}
                   </div>
                 ))
               ) : (
@@ -374,24 +376,26 @@ export default function Home() {
             </div>
           </div>
         </div>
-        {/* Score row under PRO (center cell) */}
-        <div style={styles.scoreRow}>
-          <div style={styles.scoreCell}></div>
-          <div style={{ ...styles.scoreCell, background: "#FFF5E6", border: "1px solid rgba(0,0,0,0.06)" }}>
-            {typeof strength === "number" ? `Score: ${strength}` : <span style={styles.small}>Score will appear here</span>}
+
+        {/* Score thin band */}
+        <div style={styles.scoreBand}>
+          <div />
+          <div style={styles.scoreCell}>
+            {typeof strength === "number" ? (
+              `${strength}/100${lastReason ? `. ${lastReason}` : ""}`
+            ) : (
+              <span style={styles.small}>Score will appear here</span>
+            )}
           </div>
-          <div style={styles.scoreCell}></div>
+          <div />
         </div>
 
-        {/* Chat area (wide across) */}
-        <div style={styles.chatWrap}>
+        {/* Chat bottom (~1/4) */}
+        <div style={styles.chatArea}>
           <div ref={scrollRef} style={styles.chatScroll}>
             {chat.length === 0 && <div style={styles.small}>Start typing to chat with the model…</div>}
             {chat.map((m, i) => (
-              <div
-                key={i}
-                style={m.role === "user" ? styles.bubbleUser : styles.bubbleAssistant}
-              >
+              <div key={i} style={m.role === "user" ? styles.bubbleUser : styles.bubbleAssistant}>
                 {m.text}
               </div>
             ))}
@@ -403,36 +407,43 @@ export default function Home() {
               value={userText}
               onChange={(e) => setUserText(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") send(userText);
+                if (e.key === "Enter" && !starting && sessionId) send(userText);
               }}
+              disabled={starting || !sessionId}
             />
-            <button style={styles.sendBtn} onClick={() => send(userText)}>
+            <button
+              style={styles.sendBtn}
+              onClick={() => send(userText)}
+              disabled={starting || !sessionId}
+              title={!sessionId ? "Session is starting…" : "Send"}
+            >
               Send
             </button>
           </div>
         </div>
       </div>
 
-      {/* RIGHT (soft orange) */}
+      {/* RIGHT */}
       <div style={styles.rightPane}>
         <div style={styles.rightCard}>
           <h3 style={{ margin: "0 0 6px 0" }}>Welcome to DebateMate!</h3>
-          <div className="small">
-            DebateMate is an AI-powered platform for structured argumentation, pitch testing, critical feedback, expected objections.
+          <div style={styles.small}>
+            DebateMate is an AI-powered platform for structured argumentation, pitch testing, critical feedback, and objections.
           </div>
         </div>
 
         <div style={styles.rightCard}>
           <h4 style={{ margin: "0 0 6px 0" }}>Debate Me</h4>
-          <p style={{ margin: 0 }}>
-            Stress-test a claim or argument
-          </p>
+        <p style={{ margin: 0 }}>Stress-test a claim or argument</p>
           <div style={{ height: 8 }} />
           <button
-            style={styles.modeBtn}
+            style={{
+              ...styles.modeBtn,
+              outline: mode === "debate_counter" ? "2px solid #333" : "none",
+              opacity: starting ? 0.6 : 1,
+            }}
             onClick={() => switchModeTo("debate_counter")}
-            disabled={!sessionId}
-            title={!sessionId ? "Session is starting…" : "Switch to Debate"}
+            disabled={starting}
           >
             Switch to Debate
           </button>
@@ -440,18 +451,37 @@ export default function Home() {
 
         <div style={styles.rightCard}>
           <h4 style={{ margin: "0 0 6px 0" }}>Pitch Me</h4>
-          <p style={{ margin: 0 }}>
-            Test your pitch or presentation, to prepare for objections
-          </p>
+          <p style={{ margin: 0 }}>Test your pitch to prepare for objections</p>
           <div style={{ height: 8 }} />
           <button
-            style={styles.modeBtn}
+            style={{
+              ...styles.modeBtn,
+              outline: mode === "pitch_objections" ? "2px solid #333" : "none",
+              opacity: starting ? 0.6 : 1,
+            }}
             onClick={() => switchModeTo("pitch_objections")}
-            disabled={!sessionId}
-            title={!sessionId ? "Session is starting…" : "Switch to Pitch"}
+            disabled={starting}
           >
             Switch to Pitch
           </button>
+        </div>
+
+        {/* Optional: Fallacies panel */}
+        <div style={styles.rightCard}>
+          <h4 style={{ margin: "0 0 6px 0" }}>Detected Fallacies</h4>
+          {fallacies?.length ? (
+            <div style={{ whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.35 }}>
+              {fallacies.map((f, i) => (
+                <div key={i} style={{ marginBottom: 6 }}>
+                  {f.emoji ? `${f.emoji} ` : ""}
+                  {f.label}
+                  {f.why ? `: ${f.why}` : ""}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <span style={styles.small}>None detected yet</span>
+          )}
         </div>
       </div>
     </div>
