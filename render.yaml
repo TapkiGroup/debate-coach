@@ -4,12 +4,13 @@ services:
     name: debate-backend
     runtime: docker
     dockerContext: .
-    dockerfilePath: app/backend/Dockerfile
+    rootDir: app/backend      
+    dockerfilePath: Dockerfile
     autoDeployTrigger: commit
     envVars:
       - key: CORS_ORIGINS
         fromService:
-          name: debate-frontend-static
+          name: debate-frontend
           type: web
           envVarKey: RENDER_EXTERNAL_URL
 
