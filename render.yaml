@@ -22,7 +22,7 @@ services:
         sync: false
 
   - type: web
-    name: debate-mate-web-ssr
+    name: debate-mate-web-docker 
     env: docker
     rootDir: app/frontend
     dockerfilePath: Docker
@@ -31,10 +31,7 @@ services:
     healthCheckPath: /
     envVars:
       - key: NEXT_PUBLIC_BACKEND_ORIGIN
-        fromService:
-          type: web
-          name: debate-mate-api
-          property: url
+        value: https://REPLACE_ME_WITH_API_URL
       - key: NEXT_PUBLIC_BACKEND_URL
         value: /api
       - key: PORT
