@@ -51,7 +51,7 @@ def execute(intent: str, claim: str, need_fallacy: bool) -> Dict[str, Any]:
         if fallacies:
             fallacies_text = "DETECTED FALLACIES:\n"
             for f in fallacies:
-                fallacies_text += f"{f['emoji']} {f['label']}: {f['why']}\n"
+                fallacies_text += f"{f.emoji} {f.label}: {f.why}\n"
 
         # Score and evaluation summary
         score = Score(**score_obj)
@@ -88,11 +88,15 @@ def execute(intent: str, claim: str, need_fallacy: bool) -> Dict[str, Any]:
         if fallacies:
             fallacies_text = "DETECTED FALLACIES:\n"
             for f in fallacies:
-                fallacies_text += f"{f['emoji']} {f['label']}: {f['why']}\n"
+                fallacies_text += f"{f.emoji} {f.label}: {f.why}\n"
 
         # Combine
         con_text = counters_text + (("\n" + fallacies_text) if fallacies_text else "")
         events.append(Event(column=Column.CON, payload=con_text.strip()))
         chat_reply = "I've added counter-arguments and fallacy analysis to the CON column."
 
-    return {"chat_reply": chat_reply, "events": events, "score": score, "fallacies": fallacies}
+    return {"chat_reply": chat_reply, 
+            "events": events, 
+            "score": score, 
+            "fallacies": [f.model_dump() for f in fallacies] if fallacies else []
+            }

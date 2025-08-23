@@ -11,7 +11,7 @@ def run_chat_turn(payload: ChatIn, store: SessionStore) -> ChatOut:
     user_text = payload.user_text
 
     events_to_return: List[Event] = []
-    fallacies = None
+    fallacies = []
     score = None
 
     # === 1) Extract claim/pitch FIRST and persist PRO (append-only, no strengthening)

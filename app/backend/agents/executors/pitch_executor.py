@@ -42,27 +42,22 @@ def execute(intent: str, pitch_text: str, need_fallacy: bool, do_research: bool 
         bullets = data.get("bullets", [])
         score_obj = data.get("score", {"value":0,"reasons":["fallback"]})
 
-        # Format critique bullets
         critique_text = ""
         for b in bullets:
             critique_text += f"- {b}\n"
 
-        # Format fallacies
-        fallacies_text = ""
-        
         # Score and evaluation summary
         score = Score(**score_obj)
         score_text = f"Score: {score.value}/100"
         evaluation_summary = ""
 
         # Combine
-        con_text = f"{evaluation_summary}\n{critique_text}"
-        con_text = "\n" + score_text
+        critique_text += "\n" + score_text
         
         if fallacies_text:
-            con_text += "\n" + fallacies_text
+            critique_text += "\n" + fallacies_text
 
-        events.append(Event(column=Column.CON, payload=con_text.strip()))
+        events.append(Event(column=Column.CON, payload=critique_text.strip()))
         chat_reply = "First impression added with a score."
 
     else:
@@ -72,19 +67,31 @@ def execute(intent: str, pitch_text: str, need_fallacy: bool, do_research: bool 
         ranked = data.get("ranked", [])
 
         # Format counters
-        counters_text = ""
+        critique_text = ""
         for c in ranked:
             if c.get("title"):
-                counters_text += f"{c['title']}: {c['why']}\n"
+                critique_text += f"{c['title']}: {c['why']}\n"
             else:
-                counters_text += f"{c['why']}\n"
+                critique_text += f"{c['why']}\n"
 
-        # Format fallacies
-        fallacies_text = ""
-        
+         # Format critique bullets
+        if ranked and isinstance(ranked, list):
+            critique_text += "\n".join(f"- {b}" for b in ranked)
+        else:
+            critique_text += "- No objections were generated."
+
+        # Score and evaluation summary
+        score = Score(**score_obj)
+        score_text = f"Score: {score.value}/100"
+        evaluation_summary = ""
+
         # Combine
-        con_text = counters_text + (("\n" + fallacies_text) if fallacies_text else "")
-        events.append(Event(column=Column.CON, payload=con_text.strip()))
+        critique_text += "\n" + score_text
+
+        if fallacies_text:
+            critique_text += "\n" + fallacies_text
+
+        events.append(Event(column=Column.CON, payload=critique_text.strip()))
         chat_reply = "I've added objections."
 
-    return {"chat_reply": chat_reply, "events": events, "score": score, "fallacies": fallacies}
+    return {"chat_reply": chat_reply, "events": events, "score": score, "fallacies": [f.model_dump() for f in fallacies] if fallacies else []}
