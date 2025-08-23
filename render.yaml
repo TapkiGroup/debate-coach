@@ -1,25 +1,31 @@
+# render.yaml (в корне репозитория)
+
 services:
   # --- Backend (FastAPI via Docker) ---
   - type: web
     name: debate-backend
     runtime: docker
-    dockerContext: .                       
-    dockerfilePath: app/backend/Dockerfile 
+    dockerContext: .
+    dockerfilePath: app/backend/Dockerfile
     autoDeployTrigger: commit
     envVars:
-      - key: PORT
-        value: "8000"                     
       - key: CORS_ORIGINS
-        value: https://debate-frontend.onrender.com
+        fromService:
+          name: debate-frontend
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
 
   # --- Frontend (Next.js SSR) ---
   - type: web
     name: debate-frontend
     runtime: node
-    rootDir: app/frontend                
+    rootDir: app/frontend
     buildCommand: npm ci && npm run build
     startCommand: npm run start -- -p $PORT
     autoDeployTrigger: commit
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://debate-backend.onrender.com
+        fromService:
+          name: debate-backend
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
