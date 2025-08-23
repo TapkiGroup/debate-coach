@@ -3,7 +3,7 @@ services:
     name: debate-coach-api-ssr
     env: docker
     rootDir: app/backend
-    dockerfilePath: Docker
+    dockerfilePath: Dockerfile
     plan: free
     autoDeploy: true
     healthCheckPath: /healthz
@@ -25,7 +25,7 @@ services:
     name: debate-coach-web-ssr
     env: docker
     rootDir: app/frontend
-    dockerfilePath: Docker
+    dockerfilePath: Dockerfile
     plan: free
     autoDeploy: true
     healthCheckPath: /
