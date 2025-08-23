@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: debate-mate-api
+    name: debate-mate-api-ssr
     env: docker
     rootDir: app/backend
     dockerfilePath: app/backend/Docker
