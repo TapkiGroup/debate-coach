@@ -12,7 +12,8 @@ app = FastAPI(title="Debate Coach", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://debate-coach.pages.dev"
+        "https://debate-coach.pages.dev",
+        "http://localhost:3000"
     ],
     allow_credentials=True,
     allow_methods=["*"],
