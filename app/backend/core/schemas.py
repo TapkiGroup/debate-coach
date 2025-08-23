@@ -56,10 +56,10 @@ class Event(BaseModel):
 
 class SessionState(BaseModel):
     mode: Mode
-    pro: List[Event] = []
-    con: List[Event] = []
-    sources: List[Source] = []
-    fallacies_seen: List[Fallacy] = []
+    pro: List[Event] = Field(default_factory=list)
+    con: List[Event] = Field(default_factory=list)
+    sources: List[Source] = Field(default_factory=list)
+    fallacies_seen: List[Fallacy] = Field(default_factory=list)
     last_user_claim_raw: Optional[str] = None
     last_intent: Optional[Intent] = None
     last_plan: Optional[List[str]] = None
