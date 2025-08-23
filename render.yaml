@@ -1,3 +1,5 @@
+# render.yaml
+
 services:
   # --- Backend (FastAPI via Docker) ---
   - type: web
@@ -9,18 +11,16 @@ services:
     envVars:
       - key: CORS_ORIGINS
         fromService:
-          name: debate-frontend-ssr
-          type: web
+          name: debate-frontend-static
+          type: static_site
           envVarKey: RENDER_EXTERNAL_URL
 
-  # --- Frontend (Next.js SSR) ---
-  - type: web
-    name: debate-frontend-ssr   
-    runtime: node
+  # --- Frontend (Next.js static export) ---
+  - type: static_site
+    name: debate-frontend-static
     rootDir: app/frontend
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start -- -p $PORT
-    autoDeployTrigger: commit
+    buildCommand: npm ci && npm run build && npm run export
+    staticPublishPath: out
     envVars:
       - key: NEXT_PUBLIC_API_URL
         fromService:
