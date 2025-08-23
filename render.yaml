@@ -33,7 +33,7 @@ services:
       - key: NEXT_PUBLIC_BACKEND_ORIGIN
         fromService:
           type: web
-          name: debate-coach-api
+          name: debate-mate-api
           property: url
       - key: NEXT_PUBLIC_BACKEND_URL
         value: /api
