@@ -3,12 +3,12 @@ services:
   - type: web
     name: debate-backend
     runtime: docker
-    dockerContext: app/backend           
-    dockerfilePath: app/backend/Dockerfile
+    dockerContext: .                       
+    dockerfilePath: app/backend/Dockerfile 
     autoDeployTrigger: commit
     envVars:
-      - key: PORT                         
-        value: "8000"
+      - key: PORT
+        value: "8000"                     
       - key: CORS_ORIGINS
         value: https://debate-frontend.onrender.com
 
@@ -16,10 +16,10 @@ services:
   - type: web
     name: debate-frontend
     runtime: node
-    rootDir: app/frontend             
+    rootDir: app/frontend                
     buildCommand: npm ci && npm run build
     startCommand: npm run start -- -p $PORT
     autoDeployTrigger: commit
     envVars:
-      - key: NEXT_PUBLIC_API_URL        
+      - key: NEXT_PUBLIC_API_URL
         value: https://debate-backend.onrender.com
