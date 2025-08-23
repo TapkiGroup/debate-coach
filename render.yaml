@@ -1,11 +1,10 @@
 services:
-  # --- Backend (FastAPI) ---
+  # --- Backend (FastAPI via Docker) ---
   - type: web
     name: debate-backend
-    runtime: docker
-    rootDir: .
-    dockerContext: app/backend         
-    dockerfilePath: app/backend/Dockerfile     
+    env: docker             
+    rootDir: app/backend      
+    dockerfilePath: Dockerfile 
     autoDeploy: true
     envVars:
       - key: PORT
@@ -20,7 +19,7 @@ services:
   # --- Frontend (Next.js static export) ---
   - type: web
     name: debate-frontend
-    runtime: static
+    env: static
     rootDir: app/frontend
     buildCommand: npm ci && npm run build && npm run export
     staticPublishPath: out
