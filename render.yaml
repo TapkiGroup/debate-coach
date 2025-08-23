@@ -12,7 +12,7 @@ services:
       - key: CORS_ORIGINS
         value: https://debate-frontend.onrender.com
 
-  - type: static
+  - type: static_site
     name: debate-frontend
     rootDir: frontend
     buildCommand: npm ci && npm run build
@@ -21,6 +21,6 @@ services:
       - key: VITE_API_URL
         value: https://debate-backend.onrender.com
     routes:
-      - type: rewrite            # чтобы SPA работала по прямым ссылкам
+      - type: rewrite            
         source: "/*"
         destination: "/index.html"
