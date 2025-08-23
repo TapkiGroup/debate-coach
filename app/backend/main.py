@@ -32,9 +32,9 @@ def health():
 def healthz():
     return "ok"
 
-@app.get("/api/health")
-def api_health():
-    return {"status": "ok"}
+@app.get("/health")
+def health():
+    return {"ok": True}
 
 from fastapi.routing import APIRoute
 
