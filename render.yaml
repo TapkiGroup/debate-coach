@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: debate-backend
+    env: docker
+    rootDir: backend
+    dockerfilePath: backend/Dockerfile
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: CORS_ORIGINS
+        value: https://debate-frontend.onrender.com
+
+  - type: static
+    name: debate-frontend
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://debate-backend.onrender.com
+    routes:
+      - type: rewrite            # чтобы SPA работала по прямым ссылкам
+        source: "/*"
+        destination: "/index.html"
