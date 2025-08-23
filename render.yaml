@@ -3,9 +3,9 @@ services:
   - type: web
     name: debate-backend
     runtime: docker
-    rootDir: app/backend
+    rootDir: .
     dockerContext: app/backend         
-    dockerfilePath: Dockerfile       
+    dockerfilePath: app/backend/Dockerfile     
     autoDeploy: true
     envVars:
       - key: PORT
