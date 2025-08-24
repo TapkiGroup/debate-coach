@@ -21,7 +21,7 @@ def _persist_pro_if_any(user_text: str, st, store: SessionStore, session_id: str
     if normalized and original:
         st.last_user_claim_raw = original
         st.has_new_claim_this_turn = True
-        ev = Event(column=Column.PRO, payload=f"You current statement: {normalized}")
+        ev = Event(column=Column.PRO, payload=f"{normalized}")
         store.append_event(session_id, ev)
         events.append(ev)
     else:
@@ -89,7 +89,7 @@ def run_chat_turn(payload: ChatIn, store: SessionStore) -> ChatOut:
                 events_to_return, score, fallacies
             )
         return _reply(
-            "Please paste your argument/pitch so I can help. One or two sentences is enough.",
+            "Please paste your pitch so I can help. One or two sentences is enough.",
             [], score, fallacies
         )
 
@@ -103,7 +103,7 @@ def run_chat_turn(payload: ChatIn, store: SessionStore) -> ChatOut:
     # 5) UPDATE_PRO_ONLY
     if command == "UPDATE_PRO_ONLY" and not cmd.get("plan_steps"):
         return _reply(
-            "Got your position. Should I evaluate it, generate objections, or gather sources?",
+            "Got your position. Should I evaluate it, give objections, or gather sources?",
             events_to_return, score, fallacies
         )
 
@@ -111,7 +111,12 @@ def run_chat_turn(payload: ChatIn, store: SessionStore) -> ChatOut:
     if command == "RUN_PIPELINE":
         steps = cmd.get("plan_steps", [])
         need_fallacy = "FALLACY_CHECK" in steps
-        claim = st.last_user_claim_raw or user_text
+
+        # Always use latest PRO for pitch mode if available
+        if mode != Mode.debate_counter and not st.has_new_claim_this_turn and st.last_user_claim_raw:
+            claim = st.last_user_claim_raw
+        else:
+            claim = st.last_user_claim_raw or user_text
 
         if intent == "research":
             return _reply("I can't do research yet, sorry!.", events_to_return, score, fallacies)
